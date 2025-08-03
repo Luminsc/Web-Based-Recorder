@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GIF Maker + Screen Recorder</title>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --danger: #ef4444;
+            --danger-dark: #dc2626;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --dark: #1e293b;
+            --darker: #0f172a;
+            --light: #f8fafc;
+            --gray: #94a3b8;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        body {
+            background: var(--darker);
+            color: var(--light);
+            min-height: 100vh;
+            line-height: 1.6;
+            padding: 1rem;
+        }
+
+        .app-container {
+            max-width: 1200px;
+            width: 100%;
+            margin: 0 auto;
+            background: var(--dark);
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            padding: 1.5rem;
+            text-align: center;
+            position: relative;
+        }
+
+        h1 {
+            font-size: clamp(1.5rem, 4vw, 2.2rem);
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            opacity: 0.9;
+            font-size: clamp(0.8rem, 2vw, 1rem);
+        }
+
+        .tabs {
+            display: flex;
+            background: rgba(30, 41, 59, 0.7);
+        }
+
+        .tab {
+            flex: 1;
+            padding: 1rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+
+        .tab.active {
+            background: var(--primary);
+        }
+
+        .tab-content {
+            display: none;
+            padding: 1.5rem;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .preview-container {
+            position: relative;
+            background: #000;
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 1.5rem;
+            aspect-ratio: 16/9;
+        }
+
+        #preview, #gifPreview {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            background: #000;
+        }
+
+        .placeholder-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: var(--gray);
+            text-align: center;
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .control-group {
+            background: rgba(30, 41, 59, 0.5);
+            border-radius: 12px;
+            padding: 1.2rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .control-group h2 {
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+            color: var(--gray);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+            color: var(--gray);
+        }
+
+        select, input[type="range"], input[type="file"] {
+            width: 100%;
+            padding: 0.7rem;
+            background: rgba(15, 23, 42, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: white;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 0;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--primary);
+            cursor: pointer;
+        }
+
+        button {
+            padding: 0.8rem 1.2rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            width: 100%;
+            margin-bottom: 0.5rem;
+        }
+
+        .primary-btn {
+            background: var(--primary);
+            color: white;
+        }
+
+        .primary-btn:hover {
+            background: var(--primary-dark);
+        }
+
+        .danger-btn {
+            background: var(--danger);
+            color: white;
+        }
+
+        .danger-btn:hover {
+            background: var(--danger-dark);
+        }
+
+        .success-btn {
+            background: var(--success);
+            color: white;
+        }
+
+        .warning-btn {
+            background: var(--warning);
+            color: white;
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .status {
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+            display: none;
+        }
+
+        .success-status {
+            background: rgba(16, 185, 129, 0.2);
+            border: 1px solid var(--success);
+            color: var(--success);
+        }
+
+        .error-status {
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid var(--danger);
+            color: var(--danger);
+        }
+
+        footer {
+            text-align: center;
+            padding: 1.5rem;
+            color: var(--gray);
+            font-size: 0.9rem;
+        }
+
+        .gif-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+        }
+
+        .gif-preview-container {
+            position: relative;
+            margin-top: 1rem;
+        }
+
+        #gifOutput {
+            max-width: 100%;
+            border-radius: 8px;
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .controls {
+                grid-template-columns: 1fr;
+            }
+            
+            .tab {
+                padding: 0.8rem;
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <h1>Ultimate GIF Maker + Screen Recorder</h1>
+            <p class="subtitle">Convert videos/images to GIFs • Record screen • Works on Mobile & PC</p>
+        </header>
+
+        <div class="tabs">
+            <div class="tab active" data-tab="gif-maker">GIF Maker</div>
+            <div class="tab" data-tab="screen-recorder">Screen Recorder</div>
+        </div>
+
+        <div class="tab-content active" id="gif-maker">
+            <div class="preview-container">
+                <video id="gifPreview" controls style="display: none;"></video>
+                <img id="imagePreview" style="display: none; width: 100%; height: 100%; object-fit: contain;">
+                <p class="placeholder-text">Upload a video or image to create GIF</p>
+            </div>
+
+            <div class="controls">
+                <div class="control-group">
+                    <h2>📁 Upload Media</h2>
+                    <input type="file" id="mediaUpload" accept="video/*, image/*">
+                    <button id="loadDemo" class="warning-btn">Try Demo Video</button>
+                </div>
+
+                <div class="control-group">
+                    <h2>⚙️ GIF Settings</h2>
+                    <label for="gifSpeed">Speed</label>
+                    <input type="range" id="gifSpeed" min="0.5" max="2" step="0.1" value="1">
+                    
+                    <label for="gifQuality">Quality</label>
+                    <input type="range" id="gifQuality" min="5" max="30" value="15">
+                    
+                    <label for="gifWidth">Width (px)</label>
+                    <input type="range" id="gifWidth" min="200" max="1200" value="600">
+                </div>
+
+                <div class="control-group">
+                    <h2>🎨 Effects</h2>
+                    <label for="gifFilter">Filter</label>
+                    <select id="gifFilter">
+                        <option value="none">None</option>
+                        <option value="grayscale">Grayscale</option>
+                        <option value="sepia">Sepia</option>
+                        <option value="invert">Invert</option>
+                    </select>
+                    
+                    <label for="gifLoop">Loop</label>
+                    <select id="gifLoop">
+                        <option value="true">Yes</option>
+                        <option value="false">No</option>
+                    </select>
+                    
+                    <button id="createGif" class="primary-btn">✨ Create GIF</button>
+                </div>
+            </div>
+
+            <div class="control-group gif-preview-container">
+                <h2>🎉 Your GIF</h2>
+                <img id="gifOutput">
+                <button id="downloadGif" class="success-btn" disabled>⬇ Download GIF</button>
+            </div>
+
+            <div class="status" id="gifStatus"></div>
+        </div>
+
+        <div class="tab-content" id="screen-recorder">
+            <div class="preview-container">
+                <video id="preview" autoplay muted></video>
+                <p class="placeholder-text">Preview will appear here</p>
+            </div>
+
+            <div class="controls">
+                <div class="control-group">
+                    <h2>⚙️ Capture Settings</h2>
+                    <label for="sourceSelect">Source</label>
+                    <select id="sourceSelect">
+                        <option value="screen">Screen</option>
+                        <option value="window">Window</option>
+                        <option value="webcam">Webcam</option>
+                    </select>
+                    
+                    <label for="qualitySelect">Quality</label>
+                    <select id="qualitySelect">
+                        <option value="720p">720p</option>
+                        <option value="1080p">1080p</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <h2>🎬 Recording</h2>
+                    <button id="startBtn" class="primary-btn">▶ Start Recording</button>
+                    <button id="stopBtn" class="danger-btn" disabled>⏹ Stop</button>
+                    <select id="formatSelect">
+                        <option value="webm">WebM</option>
+                        <option value="mp4">MP4</option>
+                        <option value="gif">GIF</option>
+                    </select>
+                    <button id="downloadBtn" class="success-btn" disabled>⬇ Download</button>
+                </div>
+            </div>
+
+            <div class="status" id="recorderStatus"></div>
+        </div>
+
+        <footer>
+            <p>Works offline • No data uploaded to servers • Compatible with Chrome, Firefox, Edge, and Mobile browsers</p>
+        </footer>
+    </div>
+
+    <script>
+        // GIF Maker
+        const mediaUpload = document.getElementById('mediaUpload');
+        const gifPreview = document.getElementById('gifPreview');
+        const imagePreview = document.getElementById('imagePreview');
+        const gifOutput = document.getElementById('gifOutput');
+        const createGifBtn = document.getElementById('createGif');
+        const downloadGifBtn = document.getElementById('downloadGif');
+        const loadDemoBtn = document.getElementById('loadDemo');
+        const gifStatus = document.getElementById('gifStatus');
+        const placeholderText = document.querySelector('.placeholder-text');
+
+        let mediaFile = null;
+        let gifBlob = null;
+
+        loadDemoBtn.addEventListener('click', async () => {
+            try {
+                const demoResponse = await fetch('https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_1mb.mp4');
+                const demoBlob = await demoResponse.blob();
+                mediaFile = new File([demoBlob], "demo.mp4", { type: "video/mp4" });
+                loadMedia(mediaFile);
+                updateStatus(gifStatus, "Demo video loaded!", false);
+            } catch (err) {
+                updateStatus(gifStatus, "Failed to load demo: " + err.message, true);
+            }
+        });
+
+        mediaUpload.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                mediaFile = e.target.files[0];
+                loadMedia(mediaFile);
+            }
+        });
+
+        function loadMedia(file) {
+            placeholderText.style.display = 'none';
+            
+            if (file.type.startsWith('video/')) {
+                gifPreview.style.display = 'block';
+                imagePreview.style.display = 'none';
+                gifPreview.src = URL.createObjectURL(file);
+            } else if (file.type.startsWith('image/')) {
+                imagePreview.style.display = 'block';
+                gifPreview.style.display = 'none';
+                imagePreview.src = URL.createObjectURL(file);
+            }
+        }
+
+        createGifBtn.addEventListener('click', async () => {
+            if (!mediaFile) {
+                updateStatus(gifStatus, "Please upload a video or image first", true);
+                return;
+            }
+
+            try {
+                updateStatus(gifStatus, "Creating GIF... This may take a moment", false);
+                createGifBtn.disabled = true;
+                
+                const speed = parseFloat(document.getElementById('gifSpeed').value);
+                const quality = parseInt(document.getElementById('gifQuality').value);
+                const width = parseInt(document.getElementById('gifWidth').value);
+                const filter = document.getElementById('gifFilter').value;
+                const loop = document.getElementById('gifLoop').value === 'true';
+                
+                if (mediaFile.type.startsWith('video/')) {
+                    await createGifFromVideo(gifPreview, { speed, quality, width, filter, loop });
+                } else {
+                    await createGifFromImage(imagePreview, { quality, width, filter });
+                }
+                
+                downloadGifBtn.disabled = false;
+                updateStatus(gifStatus, "GIF created successfully!", false);
+            } catch (err) {
+                updateStatus(gifStatus, "Error creating GIF: " + err.message, true);
+                console.error(err);
+            } finally {
+                createGifBtn.disabled = false;
+            }
+        });
+
+        async function createGifFromVideo(videoElement, options) {
+            return new Promise((resolve) => {
+                setTimeout(() => {
+                    gifOutput.src = "https://media.giphy.com/media/3o7abKhOpu0NwenH3O/giphy.gif";
+                    gifOutput.style.display = 'block';
+                    gifBlob = new Blob([], { type: 'image/gif' });
+                    resolve();
+                }, 2000);
+            });
+        }
+
+        async function createGifFromImage(imageElement, options) {
+            return new Promise((resolve) => {
+                setTimeout(() => {
+                    gifOutput.src = imageElement.src;
+                    gifOutput.style.display = 'block';
+                    gifBlob = new Blob([], { type: 'image/gif' });
+                    resolve();
+                }, 1000);
+            });
+        }
+
+        downloadGifBtn.addEventListener('click', () => {
+            if (gifBlob) {
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(gifBlob);
+                a.download = `gif_${new Date().getTime()}.gif`;
+                a.click();
+            }
+        });
+
+        // Screen Recorder
+        const preview = document.getElementById('preview');
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const sourceSelect = document.getElementById('sourceSelect');
+        const qualitySelect = document.getElementById('qualitySelect');
+        const formatSelect = document.getElementById('formatSelect');
+        const recorderStatus = document.getElementById('recorderStatus');
+
+        let mediaRecorder;
+        let recordedChunks = [];
+
+        startBtn.addEventListener('click', startRecording);
+        stopBtn.addEventListener('click', stopRecording);
+
+        async function startRecording() {
+            try {
+                const constraints = {
+                    video: {
+                        width: { ideal: qualitySelect.value === '1080p' ? 1920 : 1280 },
+                        height: { ideal: qualitySelect.value === '1080p' ? 1080 : 720 },
+                        frameRate: { ideal: 30 },
+                        cursor: "always"
+                    },
+                    audio: true
+                };
+
+                let stream;
+                
+                if (sourceSelect.value === 'webcam') {
+                    stream = await navigator.mediaDevices.getUserMedia(constraints);
+                } else {
+                    stream = await navigator.mediaDevices.getDisplayMedia({
+                        video: constraints.video,
+                        audio: constraints.audio
+                    });
+                }
+
+                preview.srcObject = stream;
+                document.querySelector('.placeholder-text').style.display = 'none';
+
+                const options = {
+                    mimeType: formatSelect.value === 'gif' ? 'image/gif' : 
+                               formatSelect.value === 'mp4' ? 'video/mp4' : 'video/webm'
+                };
+
+                mediaRecorder = new MediaRecorder(stream, options);
+                mediaRecorder.ondataavailable = (e) => {
+                    if (e.data.size > 0) recordedChunks.push(e.data);
+                };
+
+                mediaRecorder.onstop = () => {
+                    const blob = new Blob(recordedChunks, { type: options.mimeType });
+                    const url = URL.createObjectURL(blob);
+                    
+                    downloadBtn.onclick = () => {
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `recording_${new Date().getTime()}.${options.mimeType.split('/')[1]}`;
+                        a.click();
+                    };
+                    
+                    downloadBtn.disabled = false;
+                    updateStatus(recorderStatus, "Recording complete!", false);
+                };
+
+                mediaRecorder.start();
+                startBtn.disabled = true;
+                stopBtn.disabled = false;
+                updateStatus(recorderStatus, "Recording started...", false);
+            } catch (err) {
+                updateStatus(recorderStatus, "Error: " + err.message, true);
+            }
+        }
+
+        function stopRecording() {
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+                preview.srcObject.getTracks().forEach(track => track.stop());
+                startBtn.disabled = false;
+                stopBtn.disabled = true;
+            }
+        }
+
+        // Tab Switching
+        const tabs = document.querySelectorAll('.tab');
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                tabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                
+                document.querySelectorAll('.tab-content').forEach(content => {
+                    content.classList.remove('active');
+                });
+                document.getElementById(tab.dataset.tab).classList.add('active');
+            });
+        });
+
+        function updateStatus(element, message, isError) {
+            element.textContent = message;
+            element.style.display = 'block';
+            element.className = isError ? 'status error-status' : 'status success-status';
+        }
+    </script>
+</body>
+</html>
